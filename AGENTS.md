@@ -22,8 +22,25 @@ Project-specific rules belong in:
 - `./DESIGN.md`
 - `./docs/architecture/`
 - `./README.md`
+- `./docs/project-process/ai-workflow-compatibility.md`
 
 If this project must deviate from company standards, create an ADR under `docs/architecture/`.
+
+## Claude/Codex Workflow Compatibility
+
+This repo keeps Claude Code workflow assets under `.claude/`. Codex agents should treat them as repo-local workflow documentation, not as automatically loaded slash commands.
+
+When the user asks for one of the following workflows, first read the matching `.claude/commands/*.md` file and follow its process:
+
+- `/diagnose` or diagnostic loop requests -> `.claude/commands/diagnose.md`
+- `/handoff`, handoff prompt, or session transfer requests -> `.claude/commands/handoff.md`
+- `/wrap-up`, session wrap-up, or ship-it requests -> `.claude/commands/wrap-up.md`
+- commit/push/PR automation requests -> `.claude/commands/commit-push-pr.md`
+- daily progress report requests -> `.claude/commands/daily-report.md`
+
+Also read `.claude/rules/*.md` when work touches Rust/Tauri structure, git workflow, handoff/dev-log policy, or long-running dev servers.
+
+See `docs/project-process/ai-workflow-compatibility.md` for the cross-tool mapping.
 
 ## Verification
 
