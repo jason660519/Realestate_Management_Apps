@@ -1,0 +1,59 @@
+:root {
+  color-scheme: dark;
+  background: var(--mantine-color-dark-9);
+  color: var(--mantine-color-gray-0);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--mantine-color-dark-9) 98%, transparent),
+      color-mix(in srgb, var(--mantine-color-dark-8) 98%, transparent)
+    ),
+    var(--mantine-color-dark-9);
+}
+
+.app-header,
+.app-navbar,
+.app-aside {
+  border-color: color-mix(in srgb, var(--mantine-color-gray-3) 13%, transparent);
+  background: color-mix(in srgb, var(--mantine-color-dark-9) 96%, transparent);
+}
+
+.app-mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid color-mix(in srgb, var(--mantine-color-yellow-1) 42%, transparent);
+  border-radius: 6px;
+  color: var(--mantine-color-yellow-1);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.surface,
+.surface-card {
+  border-color: color-mix(in srgb, var(--mantine-color-gray-3) 13%, transparent);
+  background: color-mix(in srgb, var(--mantine-color-white) 5%, transparent);
+}
+
+.nav-item {
+  border-radius: 6px;
+}
+
+.stage-box {
+  min-height: 84px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--mantine-color-gray-3) 13%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--mantine-color-white) 4%, transparent);
+}

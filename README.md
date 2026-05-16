@@ -16,7 +16,22 @@ This repo is the new app. The legacy `Owner-Property-Management-AI-SPA` remains 
 ```bash
 npm install
 npm run standards:doctor
+npm run dev
 npm run build
+npm run tauri:dev
 ```
 
-Build and typecheck commands are placeholders until the Tauri/Rust project is scaffolded.
+Current Phase 1 scaffold includes a Vite + React WebView, Tauri 2 shell, settings command skeleton, server health check, and plugin registry placeholder.
+
+Verification:
+
+```bash
+npm run standards:check
+npm run typecheck
+npm run build
+cd src-tauri
+cargo fmt --check
+cargo check
+cargo test
+cargo clippy -- -D warnings
+```

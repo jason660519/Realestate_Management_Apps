@@ -1,0 +1,6 @@
+{
+  "identifier": "main-capability",
+  "description": "Main window capability for navigation, settings, health, and plugin status.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

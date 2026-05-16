@@ -3,7 +3,7 @@
 Status: Draft (skeleton + TBD)
 Date: 2026-05-17
 Owner: Project lead
-Related: `docs/product/prd.md` §6.2 §13, ADR-002
+Related: `docs/product/prd.md` §6.2 §13, ADR-002, ADR-006
 
 ## 目的
 
@@ -49,20 +49,25 @@ desktop app  ───► http://192.168.1.6:8080  ───►  reverse-proxy
 
 ## 3. Service Inventory
 
-> ⚠️ 服務清單會隨 ADR-006（DB 決策）變動。若選 Supabase self-hosted，下列 `postgres` / `auth` / `storage` 會由 Supabase stack 取代並重新配置。
+ADR-006 已決定 MVP 採用 Supabase self-hosted lean stack：`postgres:17` + `postgrest:v12`。完整 Supabase stack 的 auth、realtime、edge functions、studio 暫不部署。
 
 ### 3.1 必備服務（MVP）
 
-| 服務 | 角色 | 容器映像（候選） |
+| 服務 | 角色 | 容器映像 |
 |:--|:--|:--|
-| `reverse-proxy` | 統一入口、TLS（內網自簽即可）、route | `traefik:v3` 或 `caddy:2` |
-| `postgres` | Canonical 資料庫 | `postgres:16` 或 Supabase stack |
-| `api` | 後端 API（內含 property/document CRUD、AI router、stage trace 寫入） | TBD（依後端語言：Rust axum / Node Fastify / Python FastAPI） |
-| `object-storage` | 原始檔案 / AI 輸出 blob | `minio/minio` 或 fs + nginx static |
-| `ocr-worker` | PDF/image OCR | `paddleocr`、`tesseract` container 或自包 |
-| `ai-broker` | LLM provider routing + retry + cost log | 自製 |
+| `reverse-proxy` | 統一入口、內網 route、aggregate health | `caddy:2`（預設）或 `traefik:v3` |
+| `postgres` | Canonical 資料庫；安裝 `uuid-ossp`、`pgcrypto`、`postgis` extension | `postgres:17` |
+| `postgrest` | `/api/*` 自動 REST API；v0 anon read-only，寫入保留給 Rust service_role path | `postgrest/postgrest:v12` |
 
-### 3.2 第二批（Should Have）
+### 3.2 MVP 延後服務（Phase 2+）
+
+| 服務 | 角色 | 進場條件 |
+|:--|:--|:--|
+| `object-storage` | 原始文件 / AI 輸出 blob | Document intake 需要保存原始檔時 |
+| `ocr-worker` | PDF/image OCR | Document processing pipeline 進入 Phase 2/3 時 |
+| `ai-broker` | LLM provider routing + retry + cost log | AI review pipeline 需要 server-side routing 時 |
+
+### 3.3 第二批（Should Have）
 
 | 服務 | 角色 |
 |:--|:--|
@@ -71,11 +76,12 @@ desktop app  ───► http://192.168.1.6:8080  ───►  reverse-proxy
 | `log-aggregator` | Loki + Promtail，或先用 Docker logging driver |
 | `metrics` | Prometheus + Grafana（僅內網） |
 
-### 3.3 不在本 server（明確排除）
+### 3.4 不在本 server（明確排除）
 
 - 公網 reverse proxy / DNS（本專案不對外）
 - 第三方 AI provider（OpenAI、Anthropic 等）— 直接 outbound call，不本機 host
 - Email / SMTP（暫無需求）
+- Supabase Studio / Realtime / Edge Functions / GoTrue（v0 不部署）
 
 ---
 
@@ -109,9 +115,9 @@ desktop app  ───► http://192.168.1.6:8080  ───►  reverse-proxy
 ```
 infra/
 ├── compose.proxy.yml      reverse-proxy
-├── compose.data.yml       postgres + object-storage
-├── compose.api.yml        api
-├── compose.ai.yml         ocr-worker + ai-broker
+├── compose.data.yml       postgres + postgrest
+├── compose.storage.yml    object-storage（Phase 2+）
+├── compose.ai.yml         ocr-worker + ai-broker（Phase 3+）
 └── compose.observability.yml  log + metrics（後加）
 ```
 
@@ -121,8 +127,6 @@ infra/
 docker compose \
   -f compose.proxy.yml \
   -f compose.data.yml \
-  -f compose.api.yml \
-  -f compose.ai.yml \
   up -d
 ```
 
@@ -137,8 +141,8 @@ docker compose \
 | Volume | 內容 | 備份頻率 | 備份方式 |
 |:--|:--|:--|:--|
 | `pg_data` | Postgres canonical 資料 | **每日** | `pg_dump` → 加密壓縮 → 另一顆硬碟 |
-| `object_data` | 原始文件、AI 輸出 blob | **每日** | rsync / restic → 另一顆硬碟 |
-| `ai_logs` | AI request/response logs | 每週 | tar + 移到 cold storage |
+| `object_data` | 原始文件、AI 輸出 blob（Phase 2+） | **每日** | rsync / restic → 另一顆硬碟 |
+| `ai_logs` | AI request/response logs（Phase 3+） | 每週 | tar + 移到 cold storage |
 | `proxy_certs` | TLS cert | 每次變更 | git commit（加密） |
 | `ocr_cache` / `model_cache` | 快取 | 不備份 | 重抓即可 |
 
@@ -175,8 +179,9 @@ GET http://192.168.1.6:8080/health
   "checked_at": "2026-05-17T...",
   "services": [
     { "name": "postgres", "status": "ok", "latency_ms": 3 },
-    { "name": "ocr-worker", "status": "ok", "latency_ms": 12 },
-    { "name": "ai-broker", "status": "fail", "error": "OPENAI_API_KEY missing" }
+    { "name": "postgrest", "status": "ok", "latency_ms": 6 },
+    { "name": "object-storage", "status": "not_configured" },
+    { "name": "ai-broker", "status": "not_configured" }
   ]
 }
 ```
@@ -188,7 +193,8 @@ Desktop app 用這個 endpoint 顯示「degraded mode」UI（PRD §16.5）。
 ## 8. Security
 
 - 所有服務只 bind 內網 IP，不 bind `0.0.0.0`
-- Postgres / object-storage 不對 reverse-proxy 以外開放
+- Postgres 不對 host 暴露 port；PostgREST 只透過 reverse-proxy `/api/*` 暴露
+- object-storage 上線前需新增獨立 service spec，不與 Postgres volume 混放
 - Secret（DB password, AI API keys）用 `.env.local` 注入 compose，**不進 git**
 - `.env.local` 用 `age` 或 GPG 加密備份
 - API → DB 走 service network，不經 proxy
@@ -239,12 +245,12 @@ Desktop app 用這個 endpoint 顯示「degraded mode」UI（PRD §16.5）。
 ## 11. Open Questions
 
 1. **server OS、Docker 狀態未知** — 第一次連上後確認並填表
-2. **是否選 Supabase self-hosted** — 等 ADR-006（DB 決策）；若是，§3.1 重寫
-3. **GPU 是否存在** — 影響 OCR / AI inference 部署
-4. **異地備份目的地** — NAS / 外接硬碟 / 雲端冷儲存 三選一
-5. **內網是否需要 mDNS / DNS 別名**
-6. **deployment repo 與 app repo 是否分開** — 建議分開（infra 變動跟 app code 解耦），但第一版可放本 repo `infra/` 暫存
-7. **rick 帳號權限** — 是否能直接 `sudo` 無密碼？SSH 用 key 還是密碼？
+2. **GPU 是否存在** — 影響 OCR / AI inference 部署
+3. **異地備份目的地** — NAS / 外接硬碟 / 雲端冷儲存 三選一
+4. **內網是否需要 mDNS / DNS 別名**
+5. **deployment repo 與 app repo 是否分開** — 建議分開（infra 變動跟 app code 解耦），但第一版可放本 repo `infra/` 暫存
+6. **rick 帳號權限** — 是否能直接 `sudo` 無密碼？SSH 用 key 還是密碼？
+7. **object storage 選型** — MinIO 或 fs + nginx，等 Document intake 進入 Phase 2 再決定
 
 ---
 

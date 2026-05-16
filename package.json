@@ -2,12 +2,43 @@
   "name": "realestate-management-apps",
   "private": true,
   "version": "0.1.0",
+  "type": "module",
   "scripts": {
     "standards:check": "/Volumes/KLEVV-4T-1/Company-AI-App-Standards/scripts/company-standards.sh check .",
     "standards:fix": "/Volumes/KLEVV-4T-1/Company-AI-App-Standards/scripts/company-standards.sh fix .",
     "standards:doctor": "/Volumes/KLEVV-4T-1/Company-AI-App-Standards/scripts/company-standards.sh doctor .",
     "standards:report": "/Volumes/KLEVV-4T-1/Company-AI-App-Standards/scripts/company-standards.sh report .",
-    "build": "echo \"TODO: scaffold Tauri app and wire build\"",
-    "typecheck": "echo \"TODO: scaffold frontend and wire typecheck\""
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@mantine/core": "7.17.8",
+    "@mantine/hooks": "7.17.8",
+    "@mantine/notifications": "7.17.8",
+    "@tabler/icons-react": "^3.44.0",
+    "@tanstack/react-query": "^5.100.10",
+    "@tanstack/react-router": "^1.170.3",
+    "@tanstack/react-table": "^8.21.3",
+    "@tauri-apps/api": "^2.11.0",
+    "dayjs": "^1.11.13",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-hook-form": "^7.76.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.2",
+    "@types/react": "^18.3.27",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^6.0.2",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.13",
+    "vitest": "^4.0.14"
   }
 }

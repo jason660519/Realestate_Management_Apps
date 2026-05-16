@@ -56,6 +56,7 @@ out
 # nuxt.js build output
 .nuxt
 dist
+dist-ssr/
 
 # gatsby files
 .cache/
