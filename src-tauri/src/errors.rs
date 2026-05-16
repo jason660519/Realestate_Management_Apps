@@ -9,4 +9,6 @@ pub enum AppError {
     InvalidInput { message: String },
     #[error("State error: {message}")]
     State { message: String },
+    #[error("Config storage error: {message}")]
+    ConfigStorage { message: String },
 }
