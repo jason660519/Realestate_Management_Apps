@@ -1,0 +1,39 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "description": "Library documentation lookup (docs.rs, crates.io, npm)"
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/brave-search-mcp"],
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+      },
+      "description": "Web search for documentation and troubleshooting"
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@anthropic/filesystem-mcp",
+        "/Volumes/KLEVV-4T-1/Realestate_Management_Apps"
+      ],
+      "description": "Project filesystem access"
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/github-mcp"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "description": "GitHub API — PRs, issues, actions"
+    },
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/fetch-mcp"],
+      "description": "HTTP requests to internal server and external APIs"
+    }
+  }
+}

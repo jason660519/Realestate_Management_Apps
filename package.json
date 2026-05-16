@@ -1,0 +1,13 @@
+{
+  "name": "realestate-management-apps",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "standards:check": "/Volumes/KLEVV-4T-1/Company-AI-App-Standards/scripts/company-standards.sh check .",
+    "standards:fix": "/Volumes/KLEVV-4T-1/Company-AI-App-Standards/scripts/company-standards.sh fix .",
+    "standards:doctor": "/Volumes/KLEVV-4T-1/Company-AI-App-Standards/scripts/company-standards.sh doctor .",
+    "standards:report": "/Volumes/KLEVV-4T-1/Company-AI-App-Standards/scripts/company-standards.sh report .",
+    "build": "echo \"TODO: scaffold Tauri app and wire build\"",
+    "typecheck": "echo \"TODO: scaffold frontend and wire typecheck\""
+  }
+}
