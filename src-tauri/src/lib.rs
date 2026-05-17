@@ -4,7 +4,9 @@ mod models;
 mod services;
 mod state;
 
-use commands::{check_server_health, get_app_config, list_plugins, update_app_config};
+use commands::{
+    check_server_health, get_app_config, get_storage_diagnostics, list_plugins, update_app_config,
+};
 use services::config::ConfigStore;
 use state::AppState;
 use tauri::Manager;
@@ -21,6 +23,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_app_config,
             update_app_config,
+            get_storage_diagnostics,
             check_server_health,
             list_plugins,
         ])

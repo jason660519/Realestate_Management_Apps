@@ -2,7 +2,7 @@ use tauri::State;
 
 use crate::{
     errors::AppError,
-    models::{AppConfig, AppConfigPatch},
+    models::{AppConfig, AppConfigPatch, StorageDiagnostics},
     state::AppState,
 };
 
@@ -17,4 +17,9 @@ pub fn update_app_config(
     patch: AppConfigPatch,
 ) -> Result<AppConfig, AppError> {
     state.update_config(patch)
+}
+
+#[tauri::command]
+pub fn get_storage_diagnostics(state: State<'_, AppState>) -> Result<StorageDiagnostics, AppError> {
+    Ok(state.storage_diagnostics())
 }

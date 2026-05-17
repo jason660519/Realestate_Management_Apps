@@ -18,6 +18,15 @@ export type AppConfigPatch = {
   projectManagerEnabled?: boolean;
 };
 
+export type StorageDiagnostics = {
+  appDataDir: string;
+  configPath: string;
+  configExists: boolean;
+  configReadable: boolean;
+  configFileBytes?: number;
+  error?: string;
+};
+
 export type HealthService = {
   name: string;
   status: 'ok' | 'fail' | 'not_configured';
@@ -55,6 +64,13 @@ const fallbackConfig: AppConfig = {
   },
 };
 
+const fallbackStorageDiagnostics: StorageDiagnostics = {
+  appDataDir: 'Preview mode',
+  configPath: 'Preview mode: config.toml is created by the Tauri desktop runtime.',
+  configExists: false,
+  configReadable: false,
+};
+
 function isTauriRuntime() {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 }
@@ -84,6 +100,17 @@ export async function updateAppConfig(patch: AppConfigPatch): Promise<AppConfig>
   }
 
   return invoke<AppConfig>('update_app_config', { patch });
+}
+
+export async function getStorageDiagnostics(): Promise<StorageDiagnostics> {
+  if (!isTauriRuntime()) {
+    return fallbackStorageDiagnostics;
+  }
+
+  return invoke<StorageDiagnostics>('get_storage_diagnostics').catch((error: unknown) => ({
+    ...fallbackStorageDiagnostics,
+    error: error instanceof Error ? error.message : String(error),
+  }));
 }
 
 export async function checkServerHealth(): Promise<ServerHealth> {

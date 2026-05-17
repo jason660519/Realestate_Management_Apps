@@ -1,7 +1,24 @@
-import { Badge, Button, Divider, Group, Paper, Stack, Switch, TextInput } from '@mantine/core';
+import {
+  Badge,
+  Button,
+  Divider,
+  Group,
+  Paper,
+  Stack,
+  Switch,
+  Text,
+  TextInput,
+  Title,
+} from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useEffect, useState } from 'react';
-import { AppConfig, getAppConfig, updateAppConfig } from '../api/tauri';
+import {
+  AppConfig,
+  getAppConfig,
+  getStorageDiagnostics,
+  StorageDiagnostics,
+  updateAppConfig,
+} from '../api/tauri';
 import { PageHeader } from '../components/PageHeader';
 import { useAppData } from '../components/shell/appData';
 
@@ -11,15 +28,20 @@ export function SettingsPage() {
   const [serverBaseUrl, setServerBaseUrl] = useState('');
   const [saydoEnabled, setSaydoEnabled] = useState(false);
   const [projectManagerEnabled, setProjectManagerEnabled] = useState(false);
+  const [storageDiagnostics, setStorageDiagnostics] =
+    useState<StorageDiagnostics | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    void getAppConfig().then((nextConfig) => {
-      setConfig(nextConfig);
-      setServerBaseUrl(nextConfig.server.baseUrl);
-      setSaydoEnabled(nextConfig.plugins.saydoEnabled);
-      setProjectManagerEnabled(nextConfig.plugins.projectManagerEnabled);
-    });
+    void Promise.all([getAppConfig(), getStorageDiagnostics()]).then(
+      ([nextConfig, nextStorageDiagnostics]) => {
+        setConfig(nextConfig);
+        setServerBaseUrl(nextConfig.server.baseUrl);
+        setSaydoEnabled(nextConfig.plugins.saydoEnabled);
+        setProjectManagerEnabled(nextConfig.plugins.projectManagerEnabled);
+        setStorageDiagnostics(nextStorageDiagnostics);
+      },
+    );
   }, []);
 
   const save = async () => {
@@ -34,6 +56,7 @@ export function SettingsPage() {
       setServerBaseUrl(nextConfig.server.baseUrl);
       setSaydoEnabled(nextConfig.plugins.saydoEnabled);
       setProjectManagerEnabled(nextConfig.plugins.projectManagerEnabled);
+      setStorageDiagnostics(await getStorageDiagnostics());
       await refreshAppData();
       notifications.show({
         title: 'Settings saved',
@@ -95,6 +118,60 @@ export function SettingsPage() {
           </Group>
         </Stack>
       </Paper>
+      <StorageDiagnosticsPanel diagnostics={storageDiagnostics} />
+    </Stack>
+  );
+}
+
+function StorageDiagnosticsPanel(props: { diagnostics: StorageDiagnostics | null }) {
+  const diagnostics = props.diagnostics;
+
+  return (
+    <Paper p="md" className="surface">
+      <Stack gap="sm">
+        <Group justify="space-between" align="flex-start">
+          <Title order={4}>Local storage</Title>
+          <Badge
+            color={diagnostics?.configReadable ? 'green' : 'yellow'}
+            variant="light"
+          >
+            {diagnostics?.configReadable ? 'readable' : 'pending'}
+          </Badge>
+        </Group>
+        <StorageRow label="App data directory" value={diagnostics?.appDataDir} />
+        <StorageRow label="Config file" value={diagnostics?.configPath} />
+        <Group gap="sm">
+          <Badge color={diagnostics?.configExists ? 'green' : 'gray'} variant="light">
+            {diagnostics?.configExists ? 'config exists' : 'config missing'}
+          </Badge>
+          <Badge color={diagnostics?.configReadable ? 'green' : 'yellow'} variant="light">
+            {diagnostics?.configReadable ? 'config readable' : 'not readable'}
+          </Badge>
+          {typeof diagnostics?.configFileBytes === 'number' ? (
+            <Badge color="blue" variant="light">
+              {diagnostics.configFileBytes} bytes
+            </Badge>
+          ) : null}
+        </Group>
+        {diagnostics?.error ? (
+          <Text c="red.3" size="sm">
+            {diagnostics.error}
+          </Text>
+        ) : null}
+      </Stack>
+    </Paper>
+  );
+}
+
+function StorageRow(props: { label: string; value?: string }) {
+  return (
+    <Stack gap={2}>
+      <Text c="dimmed" size="xs" fw={700} tt="uppercase">
+        {props.label}
+      </Text>
+      <Text size="sm" className="path-text">
+        {props.value ?? 'Loading...'}
+      </Text>
     </Stack>
   );
 }

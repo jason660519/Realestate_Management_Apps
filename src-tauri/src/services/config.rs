@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     errors::AppError,
-    models::{AppConfig, PluginConfig, ServerConfig},
+    models::{AppConfig, PluginConfig, ServerConfig, StorageDiagnostics},
 };
 
 const CONFIG_FILE_NAME: &str = "config.toml";
@@ -75,6 +75,40 @@ impl ConfigStore {
                 self.config_path.display()
             ),
         })
+    }
+
+    pub fn diagnostics(&self) -> StorageDiagnostics {
+        let app_data_dir = self
+            .config_path
+            .parent()
+            .map_or_else(String::new, |path| path.display().to_string());
+
+        match fs::metadata(&self.config_path) {
+            Ok(metadata) => StorageDiagnostics {
+                app_data_dir,
+                config_path: self.config_path.display().to_string(),
+                config_exists: true,
+                config_readable: fs::read_to_string(&self.config_path).is_ok(),
+                config_file_bytes: Some(metadata.len()),
+                error: None,
+            },
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => StorageDiagnostics {
+                app_data_dir,
+                config_path: self.config_path.display().to_string(),
+                config_exists: false,
+                config_readable: false,
+                config_file_bytes: None,
+                error: None,
+            },
+            Err(error) => StorageDiagnostics {
+                app_data_dir,
+                config_path: self.config_path.display().to_string(),
+                config_exists: false,
+                config_readable: false,
+                config_file_bytes: None,
+                error: Some(error.to_string()),
+            },
+        }
     }
 }
 
@@ -196,6 +230,22 @@ mod tests {
         assert_eq!(reloaded.server.base_url, "http://127.0.0.1:8080");
         assert!(reloaded.plugins.saydo_enabled);
         assert!(reloaded.plugins.project_manager_enabled);
+    }
+
+    #[test]
+    fn diagnostics_reports_created_config_file() {
+        let store = ConfigStore::new(unique_config_path("diagnostics"));
+
+        store
+            .load_or_create()
+            .expect("default config should be created");
+        let diagnostics = store.diagnostics();
+
+        assert!(diagnostics.config_exists);
+        assert!(diagnostics.config_readable);
+        assert!(diagnostics.config_file_bytes.unwrap_or_default() > 0);
+        assert!(diagnostics.error.is_none());
+        assert!(diagnostics.config_path.ends_with(CONFIG_FILE_NAME));
     }
 
     fn unique_config_path(label: &str) -> PathBuf {

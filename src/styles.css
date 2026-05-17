@@ -57,3 +57,7 @@ body {
   border-radius: 6px;
   background: color-mix(in srgb, var(--mantine-color-white) 4%, transparent);
 }
+
+.path-text {
+  overflow-wrap: anywhere;
+}

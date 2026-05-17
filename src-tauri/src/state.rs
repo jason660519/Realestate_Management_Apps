@@ -2,7 +2,7 @@ use std::sync::Mutex;
 
 use crate::{
     errors::AppError,
-    models::{AppConfig, AppConfigPatch},
+    models::{AppConfig, AppConfigPatch, StorageDiagnostics},
     services::config::ConfigStore,
 };
 
@@ -59,6 +59,10 @@ impl AppState {
         *config = next_config.clone();
 
         Ok(next_config)
+    }
+
+    pub fn storage_diagnostics(&self) -> StorageDiagnostics {
+        self.store.diagnostics()
     }
 }
 

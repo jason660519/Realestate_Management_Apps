@@ -49,6 +49,17 @@ pub struct AppConfigPatch {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct StorageDiagnostics {
+    pub app_data_dir: String,
+    pub config_path: String,
+    pub config_exists: bool,
+    pub config_readable: bool,
+    pub config_file_bytes: Option<u64>,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ServerHealth {
     pub overall: String,
     pub checked_at: DateTime<Utc>,
