@@ -3,7 +3,10 @@ use sqlx::SqlitePool;
 
 use crate::{
     errors::AppError,
-    models::{AppConfig, PropertySource, PropertySummariesResult, PropertySummary},
+    models::{
+        AppConfig, PropertyMutationResponse, PropertySource, PropertySummariesResult,
+        PropertySummary, SavePropertyPayload,
+    },
     services::{property_cache, server_client::ServerClient},
 };
 
@@ -55,6 +58,35 @@ pub async fn list_property_summaries(
         }
         Err(error) => fallback_to_cache(pool, &error.to_string()).await,
     }
+}
+
+/// Skeleton save path (ADR-010). Posts to `/api/rpc/save_property` on the axum
+/// service via the shared `ServerClient`. Returns `InvalidInput` rather than
+/// pretending success when the server URL is blank — saves must never fall
+/// back to a cache-only path because the server is canonical for confirmed
+/// data.
+pub async fn save_property(
+    config: &AppConfig,
+    payload: &SavePropertyPayload,
+) -> Result<PropertyMutationResponse, AppError> {
+    if payload.display_name.trim().is_empty() {
+        return Err(AppError::InvalidInput {
+            message: "display_name is required".to_string(),
+        });
+    }
+
+    let Some(client) = ServerClient::from_config(config)? else {
+        return Err(AppError::InvalidInput {
+            message: "Server URL must be configured before saving a property".to_string(),
+        });
+    };
+
+    client
+        .post_json::<SavePropertyPayload, PropertyMutationResponse>(
+            "/api/rpc/save_property",
+            payload,
+        )
+        .await
 }
 
 async fn fallback_to_cache(
@@ -225,5 +257,92 @@ mod tests {
         assert!(result.rows.is_empty());
         assert!(result.error.is_some());
         assert!(result.last_synced_at.is_none());
+    }
+
+    fn spawn_save_server(status_line: &'static str, body: &'static str) -> std::net::SocketAddr {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("test server should bind");
+        let address = listener.local_addr().expect("test address should resolve");
+
+        thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("test request should connect");
+            let mut buffer = [0u8; 8192];
+            let read = stream.read(&mut buffer).unwrap_or(0);
+            let request = std::str::from_utf8(&buffer[..read]).unwrap_or_default();
+            assert!(
+                request.starts_with("POST /api/rpc/save_property"),
+                "expected POST /api/rpc/save_property, got first line {:?}",
+                request.lines().next().unwrap_or(""),
+            );
+
+            let mut response = Vec::new();
+            response.extend_from_slice(status_line.as_bytes());
+            response.extend_from_slice(b"\r\nContent-Type: application/json\r\nContent-Length: ");
+            response.extend_from_slice(body.len().to_string().as_bytes());
+            response.extend_from_slice(b"\r\nConnection: close\r\n\r\n");
+            response.extend_from_slice(body.as_bytes());
+            stream
+                .write_all(&response)
+                .expect("test response should write");
+        });
+
+        address
+    }
+
+    fn sample_payload() -> SavePropertyPayload {
+        SavePropertyPayload {
+            id: None,
+            display_name: "New Listing".to_string(),
+            kind: PropertyKind::Sale,
+            address_raw: Some("台北市".to_string()),
+        }
+    }
+
+    #[tokio::test]
+    async fn save_property_posts_and_parses_response() {
+        let response_body = r#"{"id":"abc-123","updatedAt":"2026-05-18T08:00:00Z"}"#;
+        let address = spawn_save_server("HTTP/1.1 200 OK", response_body);
+
+        let response = save_property(&config_for(address), &sample_payload())
+            .await
+            .expect("save should succeed");
+
+        assert_eq!(response.id, "abc-123");
+    }
+
+    #[tokio::test]
+    async fn save_property_rejects_empty_display_name_before_network() {
+        let config = config_for("127.0.0.1:1".parse().unwrap());
+        let payload = SavePropertyPayload {
+            display_name: "   ".to_string(),
+            ..sample_payload()
+        };
+
+        let result = save_property(&config, &payload).await;
+        assert!(matches!(result, Err(AppError::InvalidInput { .. })));
+    }
+
+    #[tokio::test]
+    async fn save_property_refuses_when_server_unconfigured() {
+        let mut config = AppConfig::default();
+        config.server.base_url = "   ".to_string();
+
+        let result = save_property(&config, &sample_payload()).await;
+        assert!(matches!(result, Err(AppError::InvalidInput { .. })));
+    }
+
+    #[tokio::test]
+    async fn save_property_surfaces_validation_error_from_server() {
+        let address = spawn_save_server(
+            "HTTP/1.1 400 Bad Request",
+            r#"{"kind":"validation","message":"display_name is required"}"#,
+        );
+
+        let result = save_property(&config_for(address), &sample_payload()).await;
+        let error = result.expect_err("400 should surface as error");
+        let AppError::ServerUnreachable { message } = error else {
+            panic!("expected ServerUnreachable, got {error:?}");
+        };
+        assert!(message.contains("400"));
+        assert!(message.contains("display_name"));
     }
 }

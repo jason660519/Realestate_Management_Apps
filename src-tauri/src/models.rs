@@ -138,6 +138,31 @@ pub struct PropertySummariesResult {
     pub error: Option<String>,
 }
 
+/// Skeleton payload for `save_property` over the axum write path (ADR-010).
+///
+/// This is **not** the full evidence-backed save model — it is the minimal
+/// shape the desktop wire needs while the axum service contract is being
+/// finalized. When the contract lands, this struct expands to include
+/// `EvidenceValue<T>` payloads per `data-model-v1.md`, plus actor and reason
+/// fields for audit.
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SavePropertyPayload {
+    /// `None` to create, `Some(uuid)` to update.
+    pub id: Option<String>,
+    pub display_name: String,
+    pub kind: PropertyKind,
+    pub address_raw: Option<String>,
+}
+
+/// Skeleton response. Final shape will mirror `Property` once axum settles.
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PropertyMutationResponse {
+    pub id: String,
+    pub updated_at: DateTime<Utc>,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginStatus {
