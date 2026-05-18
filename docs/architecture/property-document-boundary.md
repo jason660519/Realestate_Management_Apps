@@ -29,6 +29,14 @@ ADR-002 規定了「什麼走 Tauri invoke / 什麼走 HTTP / 什麼 WebView 不
 2. **local-only canonical 只在 drafts / pending_imports 兩處**，這兩張表的刪除需保護（draft 未 sync 前不可丟；pending intake 必須送達或明確取消）。
 3. AI 從未 `confirmed` 任何 evidence；不論 cache 或 server，AI 寫入只能改 `ai_extracted` / `ai_stage_id`。
 
+### 命名慣例例外：PostgREST projected models
+
+其他 typed surfaces（`AppConfig`、`ServerHealth`、`PluginStatus`、…）一律
+camelCase JSON。**只有直接 deserialize PostgREST response 的 read-only
+model（如 `PropertySummary`）允許 snake_case**，避免拆雙 struct + From
+轉換成本。代價：frontend 對這類 field 也用 snake_case (e.g.
+`row.display_name`)。等 v1 read path 走 Rust axum proxy 後可換 camelCase。
+
 ## Surface Routing — Property
 
 走 **Tauri invoke**（Rust command surface，無 HTTP）：

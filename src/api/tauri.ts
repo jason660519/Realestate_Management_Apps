@@ -52,6 +52,22 @@ export type PluginStatus = {
   lastError?: string;
 };
 
+export type PropertyKind = 'sale' | 'rental' | 'land_only' | 'commercial' | 'unknown';
+export type PropertyStatus = 'draft' | 'active' | 'pending' | 'archived' | 'unknown';
+
+// snake_case here is deliberate: this surface deserializes PostgREST responses
+// straight through. See `docs/architecture/property-document-boundary.md` for
+// the boundary note. Other typed surfaces (AppConfig, ServerHealth, …) stay
+// camelCase.
+export type PropertySummary = {
+  id: string;
+  display_name: string;
+  kind: PropertyKind;
+  status: PropertyStatus;
+  address_raw: string | null;
+  updated_at: string | null;
+};
+
 const fallbackConfig: AppConfig = {
   server: {
     baseUrl: 'http://192.168.1.6:8080',
@@ -139,6 +155,35 @@ export async function listPlugins(): Promise<PluginStatus[]> {
   }
 
   return invoke<PluginStatus[]>('list_plugins').catch(() => fallbackPlugins());
+}
+
+export async function listPropertySummaries(): Promise<PropertySummary[]> {
+  if (!isTauriRuntime()) {
+    return fallbackPropertySummaries();
+  }
+
+  return invoke<PropertySummary[]>('list_property_summaries');
+}
+
+function fallbackPropertySummaries(): PropertySummary[] {
+  return [
+    {
+      id: 'preview-1',
+      display_name: 'Preview · 內湖 4 房',
+      kind: 'sale',
+      status: 'active',
+      address_raw: 'Preview mode: real property data is fetched in the Tauri desktop runtime.',
+      updated_at: null,
+    },
+    {
+      id: 'preview-2',
+      display_name: 'Preview · 信義 套房',
+      kind: 'rental',
+      status: 'draft',
+      address_raw: null,
+      updated_at: null,
+    },
+  ];
 }
 
 function fallbackPlugins(): PluginStatus[] {
