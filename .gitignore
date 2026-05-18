@@ -89,3 +89,6 @@ target/
 src-tauri/target/
 src-tauri/binaries/
 src-tauri/gen/
+
+# Project-Manager external tool (local config, not part of the app)
+.project-manager.json
