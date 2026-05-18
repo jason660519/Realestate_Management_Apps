@@ -10,11 +10,16 @@ This folder contains architecture decision records for the Rust + Tauri rebuild.
 - `ADR-004-local-storage-and-secret.md` — Config TOML / SQLite state / fs cache / OS keychain secret
 - `ADR-005-frontend-react-stack.md` — Frontend: React + TS + Mantine + TanStack + tauri-specta
 - `ADR-006-database-supabase-self-hosted.md` — Database: Supabase self-hosted lean stack (postgres + PostgREST)
+- `ADR-009-production-bundle-and-signing.md` — macOS .app/.dmg bundle, code signing roadmap, auto-update plan
 
 ## Data Model
 
 - `data-model-v1.md` — **Current**: aligns with legacy audit, Postgres DDL examples included
 - `data-model-v0.md` — Superseded (kept as snapshot)
+
+## Specifications
+
+- `property-document-boundary.md` — Phase 2 baseline：property / document 兩個 domain 的 surface routing，落實 ADR-002/004/006
 
 ## Decision Inputs
 
