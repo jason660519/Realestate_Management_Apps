@@ -5,7 +5,8 @@ mod services;
 mod state;
 
 use commands::{
-    check_server_health, get_app_config, get_storage_diagnostics, list_plugins, update_app_config,
+    check_server_health, get_app_config, get_storage_diagnostics, list_plugins,
+    list_property_summaries, update_app_config,
 };
 use services::config::ConfigStore;
 use state::AppState;
@@ -26,6 +27,7 @@ pub fn run() {
             get_storage_diagnostics,
             check_server_health,
             list_plugins,
+            list_property_summaries,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Realestate Management Apps");

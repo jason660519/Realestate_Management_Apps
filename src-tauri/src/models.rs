@@ -77,6 +77,43 @@ pub struct HealthService {
     pub error: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PropertyStatus {
+    Draft,
+    Active,
+    Pending,
+    Archived,
+    #[serde(other)]
+    Unknown,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PropertyKind {
+    Sale,
+    Rental,
+    LandOnly,
+    Commercial,
+    #[serde(other)]
+    Unknown,
+}
+
+/// Read-only summary projected from `/api/properties?select=...`.
+///
+/// Field names map to PostgREST defaults (snake_case in JSON). Frontend receives
+/// camelCase via the tauri command surface (`#[serde(rename_all = "camelCase")]`
+/// applied on the wrapper at command boundary).
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct PropertySummary {
+    pub id: String,
+    pub display_name: String,
+    pub kind: PropertyKind,
+    pub status: PropertyStatus,
+    pub address_raw: Option<String>,
+    pub updated_at: Option<DateTime<Utc>>,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginStatus {
