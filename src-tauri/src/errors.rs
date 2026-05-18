@@ -11,4 +11,6 @@ pub enum AppError {
     State { message: String },
     #[error("Config storage error: {message}")]
     ConfigStorage { message: String },
+    #[error("Local DB error: {message}")]
+    LocalDb { message: String },
 }
