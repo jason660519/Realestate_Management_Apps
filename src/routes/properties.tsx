@@ -9,12 +9,13 @@ import {
   Table,
   Text,
 } from '@mantine/core';
-import { IconAlertCircle, IconRefresh } from '@tabler/icons-react';
+import { IconAlertCircle, IconCloudOff, IconRefresh } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import {
   listPropertySummaries,
   PropertyKind,
   PropertyStatus,
+  PropertySummariesResult,
   PropertySummary,
 } from '../api/tauri';
 import { EmptyOperationalState } from '../components/EmptyOperationalState';
@@ -53,7 +54,7 @@ export function PropertiesView(props: { serverConfigured: boolean }) {
   );
 }
 
-type PropertiesQuery = ReturnType<typeof useQuery<PropertySummary[]>>;
+type PropertiesQuery = ReturnType<typeof useQuery<PropertySummariesResult>>;
 
 function PropertiesBody(props: {
   serverConfigured: boolean;
@@ -96,9 +97,12 @@ function PropertiesBody(props: {
     );
   }
 
-  const summaries = query.data ?? [];
+  const result = query.data;
+  if (!result) {
+    return null;
+  }
 
-  if (summaries.length === 0) {
+  if (result.source === 'empty') {
     if (!serverConfigured) {
       return (
         <EmptyOperationalState
@@ -110,12 +114,51 @@ function PropertiesBody(props: {
     return (
       <EmptyOperationalState
         title="No properties yet"
-        detail="The server is reachable but no property records have been created. Add one from the desktop app or import a document to seed the workspace."
+        detail={
+          result.error
+            ? `Server reachable but the cache is empty. Last error: ${result.error}`
+            : 'The server is reachable but no property records have been created. Add one from the desktop app or import a document to seed the workspace.'
+        }
       />
     );
   }
 
-  return <PropertiesTable rows={summaries} />;
+  return (
+    <Stack gap="md">
+      {result.source === 'cache' ? (
+        <StaleCacheBanner
+          lastSyncedAt={result.lastSyncedAt}
+          reason={result.error}
+        />
+      ) : null}
+      <PropertiesTable rows={result.rows} />
+    </Stack>
+  );
+}
+
+function StaleCacheBanner(props: {
+  lastSyncedAt: string | null;
+  reason: string | null;
+}) {
+  return (
+    <Alert
+      icon={<IconCloudOff size={16} />}
+      color="yellow"
+      variant="light"
+      title="Showing cached property list"
+    >
+      <Stack gap={4}>
+        <Text size="sm">
+          The server is unreachable, so the desktop app fell back to its local SQLite cache.
+          Confirmation actions and saves are disabled until the server is back.
+        </Text>
+        <Text size="xs" c="dimmed">
+          Last synced: {formatTimestamp(props.lastSyncedAt) ?? 'never'}
+          {props.reason ? ` · Reason: ${props.reason}` : ''}
+        </Text>
+      </Stack>
+    </Alert>
+  );
 }
 
 function PropertiesTable(props: { rows: PropertySummary[] }) {
@@ -156,7 +199,7 @@ function PropertiesTable(props: { rows: PropertySummary[] }) {
               </Table.Td>
               <Table.Td>
                 <Text size="xs" c="dimmed">
-                  {formatTimestamp(row.updated_at)}
+                  {formatTimestamp(row.updated_at) ?? '—'}
                 </Text>
               </Table.Td>
             </Table.Tr>
@@ -207,8 +250,8 @@ function formatStatus(status: PropertyStatus): string {
   return STATUS_LABELS[status] ?? 'Unknown';
 }
 
-function formatTimestamp(value: string | null): string {
-  if (!value) return '—';
+function formatTimestamp(value: string | null): string | null {
+  if (!value) return null;
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleString();

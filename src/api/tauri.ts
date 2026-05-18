@@ -68,6 +68,15 @@ export type PropertySummary = {
   updated_at: string | null;
 };
 
+export type PropertySource = 'live' | 'cache' | 'empty';
+
+export type PropertySummariesResult = {
+  rows: PropertySummary[];
+  source: PropertySource;
+  lastSyncedAt: string | null;
+  error: string | null;
+};
+
 const fallbackConfig: AppConfig = {
   server: {
     baseUrl: 'http://192.168.1.6:8080',
@@ -157,33 +166,38 @@ export async function listPlugins(): Promise<PluginStatus[]> {
   return invoke<PluginStatus[]>('list_plugins').catch(() => fallbackPlugins());
 }
 
-export async function listPropertySummaries(): Promise<PropertySummary[]> {
+export async function listPropertySummaries(): Promise<PropertySummariesResult> {
   if (!isTauriRuntime()) {
     return fallbackPropertySummaries();
   }
 
-  return invoke<PropertySummary[]>('list_property_summaries');
+  return invoke<PropertySummariesResult>('list_property_summaries');
 }
 
-function fallbackPropertySummaries(): PropertySummary[] {
-  return [
-    {
-      id: 'preview-1',
-      display_name: 'Preview · 內湖 4 房',
-      kind: 'sale',
-      status: 'active',
-      address_raw: 'Preview mode: real property data is fetched in the Tauri desktop runtime.',
-      updated_at: null,
-    },
-    {
-      id: 'preview-2',
-      display_name: 'Preview · 信義 套房',
-      kind: 'rental',
-      status: 'draft',
-      address_raw: null,
-      updated_at: null,
-    },
-  ];
+function fallbackPropertySummaries(): PropertySummariesResult {
+  return {
+    rows: [
+      {
+        id: 'preview-1',
+        display_name: 'Preview · 內湖 4 房',
+        kind: 'sale',
+        status: 'active',
+        address_raw: 'Preview mode: real property data is fetched in the Tauri desktop runtime.',
+        updated_at: null,
+      },
+      {
+        id: 'preview-2',
+        display_name: 'Preview · 信義 套房',
+        kind: 'rental',
+        status: 'draft',
+        address_raw: null,
+        updated_at: null,
+      },
+    ],
+    source: 'live',
+    lastSyncedAt: null,
+    error: null,
+  };
 }
 
 function fallbackPlugins(): PluginStatus[] {

@@ -7,7 +7,7 @@ vi.mock('@tauri-apps/api/core', async () => {
   return { invoke: invokeMock };
 });
 
-import type { PropertySummary } from '../api/tauri';
+import type { PropertySummariesResult, PropertySummary } from '../api/tauri';
 import { renderWithProviders } from '../test/render';
 import {
   installTauriRuntime,
@@ -16,16 +16,41 @@ import {
 } from '../test/mockTauri';
 import { PropertiesView } from './properties';
 
-const SAMPLE: PropertySummary[] = [
-  {
-    id: '11111111-1111-1111-1111-111111111111',
-    display_name: 'Test Sale Property',
-    kind: 'sale',
-    status: 'active',
-    address_raw: 'Test address',
-    updated_at: '2026-05-10T12:34:56Z',
-  },
-];
+const SAMPLE_ROW: PropertySummary = {
+  id: '11111111-1111-1111-1111-111111111111',
+  display_name: 'Test Sale Property',
+  kind: 'sale',
+  status: 'active',
+  address_raw: 'Test address',
+  updated_at: '2026-05-10T12:34:56Z',
+};
+
+function liveResult(rows: PropertySummary[] = [SAMPLE_ROW]): PropertySummariesResult {
+  return {
+    rows,
+    source: rows.length === 0 ? 'empty' : 'live',
+    lastSyncedAt: '2026-05-18T08:00:00Z',
+    error: null,
+  };
+}
+
+function emptyResult(error: string | null = null): PropertySummariesResult {
+  return {
+    rows: [],
+    source: 'empty',
+    lastSyncedAt: null,
+    error,
+  };
+}
+
+function staleCacheResult(rows: PropertySummary[]): PropertySummariesResult {
+  return {
+    rows,
+    source: 'cache',
+    lastSyncedAt: '2026-05-17T22:00:00Z',
+    error: 'Server unreachable: connection refused',
+  };
+}
 
 beforeAll(() => {
   installTauriRuntime();
@@ -40,9 +65,9 @@ afterEach(() => {
 });
 
 describe('PropertiesView', () => {
-  it('renders rows returned by list_property_summaries', async () => {
+  it('renders rows from a live fetch', async () => {
     setInvokeHandlers({
-      list_property_summaries: SAMPLE,
+      list_property_summaries: liveResult(),
     });
 
     renderWithProviders(<PropertiesView serverConfigured />);
@@ -51,11 +76,26 @@ describe('PropertiesView', () => {
     expect(screen.getByText('Sale')).toBeInTheDocument();
     expect(screen.getByText('Active')).toBeInTheDocument();
     expect(screen.getByText('Test address')).toBeInTheDocument();
+    expect(screen.queryByText(/showing cached property list/i)).not.toBeInTheDocument();
   });
 
-  it('renders the not-configured empty state when server is unconfigured and list is empty', async () => {
+  it('shows the stale cache banner when source is cache', async () => {
     setInvokeHandlers({
-      list_property_summaries: [],
+      list_property_summaries: staleCacheResult([SAMPLE_ROW]),
+    });
+
+    renderWithProviders(<PropertiesView serverConfigured />);
+
+    expect(
+      await screen.findByText('Showing cached property list'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/last synced/i)).toBeInTheDocument();
+    expect(screen.getByText('Test Sale Property')).toBeInTheDocument();
+  });
+
+  it('renders the not-configured empty state when server is unconfigured', async () => {
+    setInvokeHandlers({
+      list_property_summaries: emptyResult('Server URL is not configured; showing cached property list.'),
     });
 
     renderWithProviders(<PropertiesView serverConfigured={false} />);
@@ -65,9 +105,9 @@ describe('PropertiesView', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders the empty-but-configured state when server is configured and list is empty', async () => {
+  it('renders the empty-but-configured state when server is up and cache is empty', async () => {
     setInvokeHandlers({
-      list_property_summaries: [],
+      list_property_summaries: emptyResult(),
     });
 
     renderWithProviders(<PropertiesView serverConfigured />);
@@ -92,7 +132,7 @@ describe('PropertiesView', () => {
     ).toBeInTheDocument();
 
     setInvokeHandlers({
-      list_property_summaries: SAMPLE,
+      list_property_summaries: liveResult(),
     });
 
     const user = userEvent.setup();
@@ -103,9 +143,9 @@ describe('PropertiesView', () => {
     });
   });
 
-  it('does not silently hide unknown kinds — they show up as Unknown badge', async () => {
+  it('does not silently hide unknown kinds', async () => {
     setInvokeHandlers({
-      list_property_summaries: [
+      list_property_summaries: liveResult([
         {
           id: '22222222-2222-2222-2222-222222222222',
           display_name: 'Legacy Mixed-Use',
@@ -114,7 +154,7 @@ describe('PropertiesView', () => {
           address_raw: null,
           updated_at: null,
         },
-      ] satisfies PropertySummary[],
+      ]),
     });
 
     renderWithProviders(<PropertiesView serverConfigured />);
