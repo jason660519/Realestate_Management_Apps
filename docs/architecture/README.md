@@ -11,6 +11,7 @@ This folder contains architecture decision records for the Rust + Tauri rebuild.
 - `ADR-005-frontend-react-stack.md` — Frontend: React + TS + Mantine + TanStack + tauri-specta
 - `ADR-006-database-supabase-self-hosted.md` — Database: Supabase self-hosted lean stack (postgres + PostgREST)
 - `ADR-009-production-bundle-and-signing.md` — macOS .app/.dmg bundle, code signing roadmap, auto-update plan
+- `ADR-010-write-path-service-role.md` — Write path 走 Rust axum + service_role；PostgREST anon 只做 SELECT
 
 ## Data Model
 
