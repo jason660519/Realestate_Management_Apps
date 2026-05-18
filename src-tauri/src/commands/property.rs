@@ -1,18 +1,20 @@
 use tauri::State;
 
 use crate::{
-    errors::AppError, models::PropertySummary, services::property_service, state::AppState,
+    errors::AppError, models::PropertySummariesResult, services::property_service, state::AppState,
 };
 
 /// Read-only batch of property summaries for the desktop list view.
 ///
-/// v0 surface: hits PostgREST `/api/properties` through the shared `ServerClient`.
-/// Returns an empty list when the server URL is unconfigured so the UI can surface
-/// a `not configured` state without an error toast.
+/// Backed by the shared `ServerClient` for the live fetch and the SQLite cache
+/// for offline fall-back. The wrapper carries `source` (`live` / `cache` /
+/// `empty`) and `lastSyncedAt` so the UI can render a stale banner without
+/// re-asking other surfaces.
 #[tauri::command]
 pub async fn list_property_summaries(
     state: State<'_, AppState>,
-) -> Result<Vec<PropertySummary>, AppError> {
+) -> Result<PropertySummariesResult, AppError> {
     let config = state.config()?;
-    property_service::list_property_summaries(&config).await
+    let pool = state.local_db();
+    property_service::list_property_summaries(&config, pool).await
 }

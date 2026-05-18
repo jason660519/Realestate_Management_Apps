@@ -101,9 +101,9 @@ pub enum PropertyKind {
 
 /// Read-only summary projected from `/api/properties?select=...`.
 ///
-/// Field names map to PostgREST defaults (snake_case in JSON). Frontend receives
-/// camelCase via the tauri command surface (`#[serde(rename_all = "camelCase")]`
-/// applied on the wrapper at command boundary).
+/// Field names map to PostgREST defaults (snake_case in JSON). The frontend
+/// surfaces this row as-is — see `docs/architecture/property-document-boundary.md`
+/// for the snake_case exception note.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct PropertySummary {
     pub id: String,
@@ -112,6 +112,30 @@ pub struct PropertySummary {
     pub status: PropertyStatus,
     pub address_raw: Option<String>,
     pub updated_at: Option<DateTime<Utc>>,
+}
+
+/// Which data source produced the rows the frontend is showing.
+///
+/// `Live`: just-fetched from server, cache was refreshed alongside.
+/// `Cache`: server unreachable / not configured; rows came from local SQLite cache.
+/// `Empty`: no rows and no cache to fall back on.
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PropertySource {
+    Live,
+    Cache,
+    Empty,
+}
+
+/// Wrapper returned by `list_property_summaries` so the UI can branch on
+/// stale-cache vs. live-server without re-asking other surfaces.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PropertySummariesResult {
+    pub rows: Vec<PropertySummary>,
+    pub source: PropertySource,
+    pub last_synced_at: Option<DateTime<Utc>>,
+    pub error: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

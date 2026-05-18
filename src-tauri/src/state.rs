@@ -1,5 +1,7 @@
 use std::sync::Mutex;
 
+use sqlx::SqlitePool;
+
 use crate::{
     errors::AppError,
     models::{AppConfig, AppConfigPatch, StorageDiagnostics},
@@ -9,15 +11,17 @@ use crate::{
 pub struct AppState {
     config: Mutex<AppConfig>,
     store: ConfigStore,
+    local_db: SqlitePool,
 }
 
 impl AppState {
-    pub fn load(store: ConfigStore) -> Result<Self, AppError> {
+    pub fn load(store: ConfigStore, local_db: SqlitePool) -> Result<Self, AppError> {
         let config = store.load_or_create()?;
 
         Ok(Self {
             config: Mutex::new(config),
             store,
+            local_db,
         })
     }
 
@@ -27,6 +31,10 @@ impl AppState {
         })?;
 
         Ok(config.clone())
+    }
+
+    pub fn local_db(&self) -> &SqlitePool {
+        &self.local_db
     }
 
     pub fn update_config(&self, patch: AppConfigPatch) -> Result<AppConfig, AppError> {
@@ -74,11 +82,13 @@ mod tests {
     };
 
     use super::*;
+    use crate::services::local_db;
 
-    #[test]
-    fn update_config_persists_patch_to_config_file() {
+    #[tokio::test]
+    async fn update_config_persists_patch_to_config_file() {
         let store = ConfigStore::new(unique_config_path("patch"));
-        let state = AppState::load(store.clone()).expect("state should load");
+        let pool = local_db::open_in_memory().await;
+        let state = AppState::load(store.clone(), pool).expect("state should load");
 
         let updated = state
             .update_config(AppConfigPatch {
@@ -98,10 +108,11 @@ mod tests {
         assert_eq!(reloaded, updated);
     }
 
-    #[test]
-    fn update_config_rejects_empty_server_base_url() {
+    #[tokio::test]
+    async fn update_config_rejects_empty_server_base_url() {
         let store = ConfigStore::new(unique_config_path("invalid"));
-        let state = AppState::load(store).expect("state should load");
+        let pool = local_db::open_in_memory().await;
+        let state = AppState::load(store, pool).expect("state should load");
 
         let result = state.update_config(AppConfigPatch {
             server_base_url: Some("   ".to_string()),
