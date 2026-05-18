@@ -13,6 +13,8 @@ This repo is the new app. The legacy `Owner-Property-Management-AI-SPA` remains 
 
 ## Development
 
+On macOS, double-click `dev-start.command` to start the Tauri desktop app and open the Vite web page at `http://127.0.0.1:5173`.
+
 ```bash
 npm install
 npm run standards:doctor
