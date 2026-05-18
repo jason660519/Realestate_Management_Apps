@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use chrono::Utc;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 use crate::{
     errors::AppError,
@@ -71,6 +72,51 @@ impl ServerClient {
 
         response
             .json::<T>()
+            .await
+            .map_err(|error| AppError::ServerUnreachable {
+                message: format!("failed to parse JSON from {url}: {error}"),
+            })
+    }
+
+    /// POST `<base>/<path>` with a JSON body and deserialize the response.
+    ///
+    /// Used for write-path RPCs (`/api/rpc/save_property`, …) that route to the
+    /// Rust axum service per ADR-010. The body serializes to JSON; non-2xx
+    /// responses carry the status code and any plain-text body the server
+    /// returned so the UI can surface a precise error reason.
+    pub async fn post_json<TIn, TOut>(&self, path: &str, body: &TIn) -> Result<TOut, AppError>
+    where
+        TIn: Serialize + ?Sized,
+        TOut: DeserializeOwned,
+    {
+        let url = format!("{}{}", self.base_url, path);
+
+        let response = self
+            .http
+            .post(&url)
+            .json(body)
+            .send()
+            .await
+            .map_err(|error| AppError::ServerUnreachable {
+                message: error.to_string(),
+            })?;
+
+        let status = response.status();
+        if !status.is_success() {
+            let body_snippet = response.text().await.unwrap_or_default();
+            let trimmed = body_snippet.trim();
+            let suffix = if trimmed.is_empty() {
+                String::new()
+            } else {
+                format!(": {trimmed}")
+            };
+            return Err(AppError::ServerUnreachable {
+                message: format!("HTTP {status} from {url}{suffix}"),
+            });
+        }
+
+        response
+            .json::<TOut>()
             .await
             .map_err(|error| AppError::ServerUnreachable {
                 message: format!("failed to parse JSON from {url}: {error}"),
@@ -279,5 +325,95 @@ mod tests {
         assert_eq!(health.overall, "not_configured");
         assert_eq!(health.base_url, "");
         assert!(health.services.is_empty());
+    }
+
+    #[derive(Debug, serde::Serialize)]
+    struct EchoRequest {
+        message: String,
+    }
+
+    #[derive(Debug, Deserialize, PartialEq, Eq)]
+    struct EchoResponse {
+        echoed: String,
+    }
+
+    #[test]
+    fn post_json_sends_body_and_parses_response() {
+        let address = spawn_test_server(|raw_request| {
+            let request = std::str::from_utf8(raw_request).unwrap_or_default();
+            // Sanity: body should be the JSON we sent.
+            assert!(
+                request.contains("\"message\":\"hello\""),
+                "expected POST body to contain message:hello, got {request:?}"
+            );
+            assert!(
+                request.starts_with("POST /api/rpc/echo"),
+                "expected POST /api/rpc/echo, got {request:?}"
+            );
+
+            let body = br#"{"echoed":"hello"}"#;
+            let mut out = Vec::new();
+            out.extend_from_slice(
+                b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ",
+            );
+            out.extend_from_slice(body.len().to_string().as_bytes());
+            out.extend_from_slice(b"\r\nConnection: close\r\n\r\n");
+            out.extend_from_slice(body);
+            out
+        });
+
+        let client = ServerClient::from_config(&config_for(address))
+            .expect("client should build")
+            .expect("client should be configured");
+
+        let response = tauri::async_runtime::block_on(client.post_json::<_, EchoResponse>(
+            "/api/rpc/echo",
+            &EchoRequest {
+                message: "hello".to_string(),
+            },
+        ))
+        .expect("post should succeed");
+
+        assert_eq!(
+            response,
+            EchoResponse {
+                echoed: "hello".to_string()
+            }
+        );
+    }
+
+    #[test]
+    fn post_json_surfaces_4xx_status_with_body_snippet() {
+        let address = spawn_test_server(|_| {
+            let body = br#"{"kind":"validation","message":"display_name is required"}"#;
+            let mut out = Vec::new();
+            out.extend_from_slice(
+                b"HTTP/1.1 400 Bad Request\r\nContent-Type: application/json\r\nContent-Length: ",
+            );
+            out.extend_from_slice(body.len().to_string().as_bytes());
+            out.extend_from_slice(b"\r\nConnection: close\r\n\r\n");
+            out.extend_from_slice(body);
+            out
+        });
+
+        let client = ServerClient::from_config(&config_for(address))
+            .expect("client should build")
+            .expect("client should be configured");
+
+        let result = tauri::async_runtime::block_on(client.post_json::<_, EchoResponse>(
+            "/api/rpc/echo",
+            &EchoRequest {
+                message: "hello".to_string(),
+            },
+        ));
+        let error = result.expect_err("4xx should error");
+        let AppError::ServerUnreachable { message } = error else {
+            panic!("expected ServerUnreachable, got {error:?}");
+        };
+        assert!(message.contains("400"));
+        assert!(
+            message.contains("display_name is required"),
+            "expected body snippet in error, got {message:?}"
+        );
     }
 }
