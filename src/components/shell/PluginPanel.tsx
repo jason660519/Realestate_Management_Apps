@@ -1,10 +1,10 @@
-import { Badge, Box, Card, Group, Stack, Text } from '@mantine/core';
+import { Badge, Box, Group, Stack, Text } from '@mantine/core';
 import { PluginStatus } from '../../api/tauri';
 import { getStatusColor } from '../../lib/status';
 
 export function PluginPanel(props: { plugins: PluginStatus[] }) {
   return (
-    <Card className="surface-card">
+    <Box className="surface" p="md">
       <Text fw={700} mb="sm">
         Plugin boundary
       </Text>
@@ -17,12 +17,12 @@ export function PluginPanel(props: { plugins: PluginStatus[] }) {
                 {plugin.enabled ? plugin.status : 'disabled'}
               </Badge>
             </Group>
-            <Text c="dimmed" size="xs">
+            <Text size="xs" style={{ color: 'var(--text-muted)' }}>
               {plugin.permissionScope.join(', ')}
             </Text>
           </Box>
         ))}
       </Stack>
-    </Card>
+    </Box>
   );
 }
