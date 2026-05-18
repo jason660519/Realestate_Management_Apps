@@ -3,7 +3,12 @@
     "PreToolUse": [
       {
         "matcher": "Bash",
-        "hooks": [".claude/hooks/block-background-devserver.sh"]
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/block-background-devserver.sh"
+          }
+        ]
       }
     ]
   },
@@ -45,9 +50,9 @@
       "Write",
       "Edit",
       "WebSearch",
-      "WebFetch(https://docs.rs:*)",
-      "WebFetch(https://tauri.app:*)",
-      "WebFetch(https://github.com:*)"
+      "WebFetch(domain:docs.rs)",
+      "WebFetch(domain:tauri.app)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [
       "Bash(rm -rf /)",
