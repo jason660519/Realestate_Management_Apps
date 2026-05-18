@@ -30,6 +30,7 @@ Verification:
 ```bash
 npm run standards:check
 npm run typecheck
+npm run test
 npm run build
 cd src-tauri
 cargo fmt --check
@@ -37,3 +38,5 @@ cargo check
 cargo test
 cargo clippy -- -D warnings
 ```
+
+Frontend test harness uses `vitest` + `@testing-library/react` (see `src/test/README.md`).
