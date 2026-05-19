@@ -1,0 +1,127 @@
+{
+  "adapters": {
+    "agents": [
+      {
+        "argsTemplate": [
+          "--cwd",
+          "{root}",
+          "{prompt}"
+        ],
+        "command": "claude-code",
+        "id": "A01",
+        "name": "Claude Code",
+        "type": "agent"
+      }
+    ],
+    "ides": []
+  },
+  "createdAt": "2026-05-18T18:38:41.742Z",
+  "features": [
+    {
+      "category": "Frontend/UI",
+      "createdAt": "2026-05-18T18:38:41.742Z",
+      "id": "F01",
+      "name": "Frontend React Stack",
+      "notes": "React desktop shell foundation.",
+      "paths": {
+        "featureFolder": ".project-manager/features/F01/",
+        "developmentLogSummaryFolder": ".project-manager/features/F01/",
+        "implementation": "src/components/",
+        "spec": ".project-manager/features/F01/feature-spec.md",
+        "tdd": ".project-manager/features/F01/tdd-spec.md",
+        "test": "src/test/"
+      },
+      "phase": "development",
+      "points": 1,
+      "progress": 50,
+      "readmePath": ".project-manager/features/F01/README.md",
+      "status": "in_progress",
+      "updatedAt": "2026-05-19T01:39:12.000Z"
+    },
+    {
+      "category": "Backend/API",
+      "createdAt": "2026-05-18T18:38:41.742Z",
+      "id": "F02",
+      "name": "Backend API Development",
+      "notes": "Project-Manager task export contract.",
+      "paths": {
+        "featureFolder": ".project-manager/features/F02/",
+        "developmentLogSummaryFolder": ".project-manager/features/F02/",
+        "implementation": "src-tauri/src/commands",
+        "spec": ".project-manager/features/F02/feature-spec.md"
+      },
+      "phase": "development",
+      "points": 1,
+      "progress": 0,
+      "readmePath": ".project-manager/features/F02/README.md",
+      "status": "todo",
+      "updatedAt": "2026-05-19T01:39:12.000Z"
+    },
+    {
+      "category": "Core/Auth",
+      "createdAt": "2026-05-18T18:38:41.742Z",
+      "id": "F03",
+      "name": "Database Integration",
+      "notes": "Self-hosted data plus local diagnostics.",
+      "paths": {
+        "featureFolder": ".project-manager/features/F03/",
+        "developmentLogSummaryFolder": ".project-manager/features/F03/",
+        "implementation": "src-tauri/src/services/local_db.rs",
+        "spec": ".project-manager/features/F03/feature-spec.md",
+        "tdd": ".project-manager/features/F03/tdd-spec.md"
+      },
+      "phase": "development",
+      "points": 1,
+      "progress": 30,
+      "readmePath": ".project-manager/features/F03/README.md",
+      "status": "in_progress",
+      "updatedAt": "2026-05-19T01:39:12.000Z"
+    },
+    {
+      "category": "DevOps/CI",
+      "createdAt": "2026-05-18T18:38:41.742Z",
+      "id": "F04",
+      "name": "DevOps Pipeline",
+      "notes": "Internal server operations plan.",
+      "paths": {
+        "featureFolder": ".project-manager/features/F04/",
+        "developmentLogSummaryFolder": ".project-manager/features/F04/",
+        "implementation": "scripts/",
+        "spec": ".project-manager/features/F04/feature-spec.md"
+      },
+      "phase": "development",
+      "points": 1,
+      "progress": 0,
+      "readmePath": ".project-manager/features/F04/README.md",
+      "status": "todo",
+      "updatedAt": "2026-05-19T01:39:12.000Z"
+    },
+    {
+      "category": "Core/Auth",
+      "createdAt": "2026-05-18T18:38:41.742Z",
+      "id": "F05",
+      "name": "Tauri Desktop App",
+      "notes": "Tauri shell and command boundary.",
+      "paths": {
+        "featureFolder": ".project-manager/features/F05/",
+        "developmentLogSummaryFolder": ".project-manager/features/F05/",
+        "implementation": "src-tauri/src/main.rs",
+        "spec": ".project-manager/features/F05/feature-spec.md"
+      },
+      "phase": "development",
+      "points": 1,
+      "progress": 40,
+      "readmePath": ".project-manager/features/F05/README.md",
+      "status": "in_progress",
+      "updatedAt": "2026-05-19T01:39:12.000Z"
+    }
+  ],
+  "id": "839747b8-95fb-4c66-b02b-5278cc9fb896",
+  "project": {
+    "defaultIDE": "Cursor",
+    "name": "realestate-management-apps",
+    "root": "/Volumes/KLEVV-4T-1/Realestate_Management_Apps"
+  },
+  "schemaVersion": 5,
+  "updatedAt": "2026-05-19T01:39:12.000Z"
+}
