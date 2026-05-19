@@ -19,6 +19,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@jason66/shared-bridge": "file:../shared-bridge",
     "@hookform/resolvers": "^5.2.2",
     "@mantine/core": "7.17.8",
     "@mantine/hooks": "7.17.8",

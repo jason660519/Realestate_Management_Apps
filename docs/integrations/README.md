@@ -7,6 +7,16 @@ This app follows Company AI App Standards v0.2 for cross-app plugin boundaries.
 - SayDo
 - Project-Manager
 - Realestate_Management_Apps
+- OpenClaw (AI agent sidecar)
+
+## OpenClaw Bridge
+
+The `@jason66/shared-bridge` package (`/Volumes/KLEVV-4T-1/shared-bridge/`) provides shared types and an `OpenClawBridge` client class. OpenClaw runs as a sidecar in Project-Manager and can relay events, report health, and dispatch agent tasks across apps through its gateway at `http://127.0.0.1:18790`.
+
+| Capability | Direction | Transport |
+|---|---|---|
+| `realestate.task.export` | Realestate → PM | HTTP API |
+| `saydo.text.handoff` | SayDo → Realestate | Local IPC |
 
 ## Initial Direction
 
